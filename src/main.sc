@@ -89,12 +89,12 @@ theme: /
                 $reactions.transition("/EvaluateOrder");
 
     state: AskAddress
-    a: Назовите, пожалуйста, адрес доставки.
-    state: LocalAddress
-        q: *
-        script:
-            $session.order.address = $request.query;
-            $reactions.transition("/EvaluateOrder");
+        a: Назовите, пожалуйста, адрес доставки.
+        state: LocalAddress
+            q: *
+            script:
+                $session.order.address = $request.query;
+                $reactions.transition("/EvaluateOrder");
 
     # Подтверждение
     state: ConfirmOrder
@@ -107,10 +107,11 @@ theme: /
                       "• Итоговая цена: " + $session.order.price + " руб.\n\n" +
                       "Всё верно?";
             $reactions.answer(msg);
-        buttons:
-            "Да, подтверждаю" -> /ProcessingOrder
-            "Изменить заказ" -> /ChangeOrder
-            "Сбросить всё" -> /ResetOrder
+            $reactions.buttons([
+                {text: "Да, подтверждаю", transition: "/ProcessingOrder"},
+                {text: "Изменить заказ", transition: "/ChangeOrder"},
+                {text: "Сбросить всё", transition: "/ResetOrder"}
+            ]);
 
     state: ChangeOrder
         a: Что бы вы хотели изменить в заказе?
