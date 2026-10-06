@@ -48,19 +48,19 @@
     }, {
       "name" : "size",
       "entity" : "PizzaSize",
-      "required" : true,
+      "required" : false,
       "prompts" : [ ],
       "array" : false
     }, {
       "name" : "topping",
       "entity" : "PizzaTopping",
-      "required" : true,
+      "required" : false,
       "prompts" : [ ],
       "array" : false
     }, {
       "name" : "address",
-      "entity" : "duckling.email",
-      "required" : true,
+      "entity" : "PizzaAddress",
+      "required" : false,
       "prompts" : [ ],
       "array" : false
     } ],
@@ -160,6 +160,33 @@
       "type" : "synonyms",
       "rule" : [ "пепперони", "чорризо" ],
       "value" : "{\"name\": \"Пепперони\", \"base_price\": 500}"
+    } ]
+  }, {
+    "entity" : {
+      "name" : "PizzaAddress",
+      "enabled" : true,
+      "shared" : false,
+      "type" : "annotation",
+      "priority" : 1,
+      "noSpelling" : true,
+      "noMorph" : false,
+      "phoneticSearch" : false,
+      "fuzzySearch" : false,
+      "client" : false,
+      "hidden" : false
+    },
+    "records" : [ {
+      "type" : "synonyms",
+      "rule" : [ "ул. Советская д.50" ],
+      "value" : "{\n  \"pattern\": \"(ул\\\\.\\\\s*[А-Яа-яЁё]+\\\\s*д\\\\.?\\\\s*\\\\d+|проспект\\\\s*[А-Яа-яЁё]+\\\\s*\\\\d+|улица\\\\s*[А-Яа-яЁё]+\\\\s*дом\\\\s*\\\\d+|\\\\S+\\\\s*\\\\d+)\",\n  \"flags\": \"i\"\n}"
+    }, {
+      "type" : "synonyms",
+      "rule" : [ "проспект Мира 10" ],
+      "value" : ""
+    }, {
+      "type" : "synonyms",
+      "rule" : [ "Ленина 5 кв 3" ],
+      "value" : ""
     } ]
   } ],
   "enabledSystemEntities" : [ "duckling.number", "duckling.time", "duckling.duration", "duckling.phone-number", "duckling.email", "duckling.url" ],

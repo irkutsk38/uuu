@@ -1,0 +1,51 @@
+{
+  "positions" : [ {
+    "id" : "/Start",
+    "x" : 1780,
+    "y" : 787
+  }, {
+    "id" : "/FillOrder",
+    "x" : 2517,
+    "y" : 787
+  }, {
+    "id" : "/EvaluateOrder",
+    "x" : 290,
+    "y" : 1212
+  }, {
+    "id" : "/AskTopping",
+    "x" : 1780,
+    "y" : 1555
+  }, {
+    "id" : "/AskSize",
+    "x" : 1780,
+    "y" : 2203
+  }, {
+    "id" : "/AskDough",
+    "x" : 1780,
+    "y" : 2847
+  }, {
+    "id" : "/AskAddress",
+    "x" : 1780,
+    "y" : 3452
+  }, {
+    "id" : "/ConfirmOrder",
+    "x" : 290,
+    "y" : 1827
+  }, {
+    "id" : "/ChangeOrder",
+    "x" : 1042,
+    "y" : 2731
+  }, {
+    "id" : "/ProcessingOrder",
+    "x" : 1042,
+    "y" : 1725
+  }, {
+    "id" : "/ResetOrder",
+    "x" : 1042,
+    "y" : 787
+  }, {
+    "id" : "/CatchAll",
+    "x" : 290,
+    "y" : 2459
+  } ]
+}
