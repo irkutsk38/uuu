@@ -1,23 +1,138 @@
-require: slotfilling/slotFilling.sc
-  module = sys.zb-common
 theme: /
-
+    # Старт диалога
     state: Start
         q!: $regex</start>
-        a: Начнём.
+        intent!: /Приветствие
+        script:
+            if (!$session.order) {
+                $session.order = {
+                    topping: null,
+                    size: null,
+                    dough: null,
+                    address: null,
+                    price: 0
+                };
+            }
+        a: Здравствуйте! Я бот для заказа пиццы. Какую пиццу вы бы хотели заказать?
+        buttons:
+            "Пепперони" -> /FillOrder
+            "Маргарита" -> /FillOrder
+            "Гавайская" -> /FillOrder
 
-    state: Hello
-        intent!: /привет
-        a: Привет привет
+    # Заполнение параметров из интента
+    state: FillOrder
+        intent!: /OrderPizza
+        script:
+            if (!$session.order) {
+                $session.order = {topping: null, size: null, dough: null, address: null, price: 0};
+            }
+            var slots = $parseTree._OrderPizza;
+            if (slots) {
+                if (slots.topping) $session.order.topping = slots.topping;
+                if (slots.size) $session.order.size = slots.size;
+                if (slots.dough) $session.order.dough = slots.dough;
+                if (slots.address) $session.order.address = slots.address;
+            }
+            if ($session.order.topping && $session.order.size) {
+                $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+            }
+            $reactions.transition("/EvaluateOrder");
 
-    state: Bye
-        intent!: /пока
-        a: Пока пока
+    # Оценка собранных данных
+    state: EvaluateOrder
+        script:
+            if (!$session.order.topping) { $reactions.transition("/AskTopping"); }
+            else if (!$session.order.size) { $reactions.transition("/AskSize"); }
+            else if (!$session.order.dough) { $reactions.transition("/AskDough"); }
+            else if (!$session.order.address) { $reactions.transition("/AskAddress"); }
+            else { $reactions.transition("/ConfirmOrder"); }
 
-    state: NoMatch
+    # Уточняющие вопросы
+    state: AskTopping
+        a: Какую начинку/вид пиццы вы предпочитаете?
+        buttons:
+            "Пепперони"
+            "Маргарита"
+            "Гавайская"
+        state: LocalTopping
+            q: * @PizzaTopping *
+            script:
+                $session.order.topping = $parseTree._PizzaTopping;
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
+
+    state: AskSize
+        a: Какой размер пиццы вам приготовить?
+        buttons:
+            "Маленькая (30см)"
+            "Большая (40см)"
+        state: LocalSize
+            q: * @PizzaSize *
+            script:
+                $session.order.size = $parseTree._PizzaSize;
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
+
+    state: AskDough
+        a: Какое тесто использовать: тонкое или традиционное?
+        buttons:
+            "Тонкое"
+            "Традиционное"
+        state: LocalDough
+            q: * @PizzaDough *
+            script:
+                $session.order.dough = $parseTree._PizzaDough;
+                $reactions.transition("/EvaluateOrder");
+
+    state: AskAddress
+        a: Назовите, пожалуйста, адрес доставки.
+        state: LocalAddress
+            q: * @PizzaAddress *
+            script:
+                $session.order.address = $request.query;
+                $reactions.transition("/EvaluateOrder");
+
+    # Подтверждение
+    state: ConfirmOrder
+        script:
+            var msg = "Проверьте ваш заказ:\n" +
+                      "• Пицца: " + $session.order.topping.name + "\n" +
+                      "• Размер: " + $session.order.size.name + "\n" +
+                      "• Тесто: " + $session.order.dough.name + "\n" +
+                      "• Адрес: " + $session.order.address + "\n" +
+                      "• Итоговая цена: " + $session.order.price + " руб.\n\n" +
+                      "Всё верно?";
+            $reactions.answer(msg);
+        buttons:
+            "Да, подтверждаю" -> /ProcessingOrder
+            "Изменить заказ" -> /ChangeOrder
+            "Сбросить всё" -> /ResetOrder
+
+    state: ChangeOrder
+        a: Что бы вы хотели изменить в заказе?
+        buttons:
+            "Начинку" -> /AskTopping
+            "Размер" -> /AskSize
+            "Тесто" -> /AskDough
+            "Адрес" -> /AskAddress
+
+    state: ProcessingOrder
+        a: Спасибо! Ваш заказ принят и передан на кухню. Готовим вашу пиццу!
+        script:
+            $session.order = null;
+
+    state: ResetOrder
+        q!: * (сброс*|отмена|заново|очистить) *
+        script:
+            $session.order = null;
+        a: Данные заказа сброшены. Чем я могу помочь?
+        buttons:
+            "Начать сначала" -> /Start
+
+    state: CatchAll
         event!: noMatch
-        a: Я не понял. Вы сказали: {{$request.query}}
-
-    state: Match
-        event!: match
-        a: {{$context.intent.answer}}
+        a: Я вас не совсем понял. Пожалуйста, уточните детали заказа или нажмите /start.
