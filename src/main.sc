@@ -89,12 +89,12 @@ theme: /
                 $reactions.transition("/EvaluateOrder");
 
     state: AskAddress
-        a: Назовите, пожалуйста, адрес доставки.
-        state: LocalAddress
-            q: * @PizzaAddress *
-            script:
-                $session.order.address = $request.query;
-                $reactions.transition("/EvaluateOrder");
+    a: Назовите, пожалуйста, адрес доставки.
+    state: LocalAddress
+        q: *
+        script:
+            $session.order.address = $request.query;
+            $reactions.transition("/EvaluateOrder");
 
     # Подтверждение
     state: ConfirmOrder
