@@ -15,9 +15,25 @@ theme: /
             }
         a: Здравствуйте! Я бот для заказа пиццы. Какую пиццу вы бы хотели заказать?
         buttons:
-            "Пепперони" -> /FillOrder
-            "Маргарита" -> /FillOrder
-            "Гавайская" -> /FillOrder
+            "Пепперони" -> /SetTopping
+            "Маргарита" -> /SetTopping
+            "Гавайская" -> /SetTopping
+
+    # Установка начинки из кнопки
+    state: SetTopping
+        script:
+            if (!$session.order) {
+                $session.order = {topping: null, size: null, dough: null, address: null, price: 0};
+            }
+            var text = $request.query.toLowerCase();
+            if (text.includes("пепперони")) {
+                $session.order.topping = {name: "Пепперони", base_price: 450};
+            } else if (text.includes("маргарита")) {
+                $session.order.topping = {name: "Маргарита", base_price: 400};
+            } else if (text.includes("гавайская")) {
+                $session.order.topping = {name: "Гавайская", base_price: 500};
+            }
+            $reactions.transition("/EvaluateOrder");
 
     # Заполнение параметров из интента
     state: FillOrder
