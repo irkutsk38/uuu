@@ -4,15 +4,13 @@ theme: /
         q!: $regex</start>
         intent!: /Приветствие
         script:
-            if (!$session.order) {
-                $session.order = {
-                    topping: null,
-                    size: null,
-                    dough: null,
-                    address: null,
-                    price: 0
-                };
-            }
+            $session.order = {
+                topping: null,
+                size: null,
+                dough: null,
+                address: null,
+                price: 0
+            };
         a: Здравствуйте! Я бот для заказа пиццы. Какую пиццу вы бы хотели заказать?
         buttons:
             "Пепперони" -> /SetTopping
@@ -25,12 +23,12 @@ theme: /
             if (!$session.order) {
                 $session.order = {topping: null, size: null, dough: null, address: null, price: 0};
             }
-            var text = $request.query.toLowerCase();
-            if (text.includes("пепперони")) {
+            var text = String($request.query || "").toLowerCase();
+            if (text.indexOf("пепперони") !== -1) {
                 $session.order.topping = {name: "Пепперони", base_price: 450};
-            } else if (text.includes("маргарита")) {
+            } else if (text.indexOf("маргарита") !== -1) {
                 $session.order.topping = {name: "Маргарита", base_price: 400};
-            } else if (text.includes("гавайская")) {
+            } else if (text.indexOf("гавайская") !== -1) {
                 $session.order.topping = {name: "Гавайская", base_price: 500};
             }
             $reactions.transition("/EvaluateOrder");
@@ -78,6 +76,21 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
+        # Обработка размера в состоянии AskTopping
+        state: LocalSizeFromTopping
+            q: * @PizzaSize *
+            script:
+                $session.order.size = $parseTree._PizzaSize;
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
+        # Обработка теста в состоянии AskTopping
+        state: LocalDoughFromTopping
+            q: * @PizzaDough *
+            script:
+                $session.order.dough = $parseTree._PizzaDough;
+                $reactions.transition("/EvaluateOrder");
 
     state: AskSize
         a: Какой размер пиццы вам приготовить?
@@ -92,6 +105,21 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
+        # Обработка начинки в состоянии AskSize
+        state: LocalToppingFromSize
+            q: * @PizzaTopping *
+            script:
+                $session.order.topping = $parseTree._PizzaTopping;
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
+        # Обработка теста в состоянии AskSize
+        state: LocalDoughFromSize
+            q: * @PizzaDough *
+            script:
+                $session.order.dough = $parseTree._PizzaDough;
+                $reactions.transition("/EvaluateOrder");
 
     state: AskDough
         a: Какое тесто использовать: тонкое или традиционное?
@@ -102,6 +130,24 @@ theme: /
             q: * @PizzaDough *
             script:
                 $session.order.dough = $parseTree._PizzaDough;
+                $reactions.transition("/EvaluateOrder");
+        # Обработка начинки в состоянии AskDough
+        state: LocalToppingFromDough
+            q: * @PizzaTopping *
+            script:
+                $session.order.topping = $parseTree._PizzaTopping;
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
+        # Обработка размера в состоянии AskDough
+        state: LocalSizeFromDough
+            q: * @PizzaSize *
+            script:
+                $session.order.size = $parseTree._PizzaSize;
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
                 $reactions.transition("/EvaluateOrder");
 
     state: AskAddress
@@ -145,7 +191,13 @@ theme: /
     state: ResetOrder
         q!: * (сброс*|отмена|заново|очистить) *
         script:
-            $session.order = null;
+            $session.order = {
+                topping: null,
+                size: null,
+                dough: null,
+                address: null,
+                price: 0
+            };
         a: Данные заказа сброшены. Чем я могу помочь?
         buttons:
             "Начать сначала" -> /Start
