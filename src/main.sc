@@ -10,11 +10,7 @@ theme: /
                 address: null,
                 price: 0
             };
-        a: Здравствуйте! Я бот для заказа пиццы. Какую пиццу вы бы хотели заказать?
-        buttons:
-            "Пепперони" -> /SetTopping
-            "Маргарита" -> /SetTopping
-            "Гавайская" -> /SetTopping
+        a: Здравствуйте! Я бот для заказа пиццы. Какую пиццу вы бы хотели заказать? (Пепперони, Маргарита, Гавайская)
 
     state: SetTopping
         script:
@@ -58,11 +54,7 @@ theme: /
             else { $reactions.transition("/ConfirmOrder"); }
 
     state: AskTopping
-        a: Какую начинку/вид пиццы вы предпочитаете?
-        buttons:
-            "Пепперони"
-            "Маргарита"
-            "Гавайская"
+        a: Какую начинку вы предпочитаете? (Пепперони, Маргарита, Гавайская). Также можете сразу назвать размер, тесто или адрес.
         state: LocalTopping
             q: * @PizzaTopping *
             script:
@@ -71,106 +63,95 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
-        state: LocalSizeFromTopping
-            q: * @PizzaSize *
-            script:
-                $session.order.size = $parseTree._PizzaSize;
-                if ($session.order.topping && $session.order.size) {
-                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
-                }
-                $reactions.transition("/EvaluateOrder");
-        state: LocalDoughFromTopping
-            q: * @PizzaDough *
-            script:
-                $session.order.dough = $parseTree._PizzaDough;
-                $reactions.transition("/EvaluateOrder");
-        state: LocalAddressFromTopping
+        state: LocalToppingText
             q: *
             script:
-                var text = String($request.query || "");
-                if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
+                var text = String($request.query || "").toLowerCase();
+                if (text.indexOf("пепперони") !== -1) {
+                    $session.order.topping = {name: "Пепперони", base_price: 450};
+                    $reactions.transition("/EvaluateOrder");
+                } else if (text.indexOf("маргарита") !== -1) {
+                    $session.order.topping = {name: "Маргарита", base_price: 400};
+                    $reactions.transition("/EvaluateOrder");
+                } else if (text.indexOf("гавайская") !== -1) {
+                    $session.order.topping = {name: "Гавайская", base_price: 500};
+                    $reactions.transition("/EvaluateOrder");
+                } else if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
                     $session.order.address = text;
                     $reactions.transition("/EvaluateOrder");
+                } else if (/больш|40/i.test(text)) {
+                    $session.order.size = {name: "Большая", price_modifier: 1.5};
+                    $reactions.transition("/EvaluateOrder");
+                } else if (/маленьк|30/i.test(text)) {
+                    $session.order.size = {name: "Маленькая", price_modifier: 1};
+                    $reactions.transition("/EvaluateOrder");
+                } else if (/тонк|традиц/i.test(text)) {
+                    $session.order.dough = {name: /тонк/i.test(text) ? "Тонкое" : "Традиционное"};
+                    $reactions.transition("/EvaluateOrder");
                 } else {
-                    $reactions.answer("Это не похоже на адрес. Назовите адрес доставки.");
+                    $reactions.answer("Не понял. Назовите начинку (Пепперони, Маргарита, Гавайская), размер, тесто или адрес.");
                 }
 
     state: AskSize
-        a: Какой размер пиццы вам приготовить?
-        buttons:
-            "Маленькая (30см)"
-            "Большая (40см)"
-        state: LocalSize
-            q: * @PizzaSize *
-            script:
-                $session.order.size = $parseTree._PizzaSize;
-                if ($session.order.topping && $session.order.size) {
-                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
-                }
-                $reactions.transition("/EvaluateOrder");
-        state: LocalToppingFromSize
-            q: * @PizzaTopping *
-            script:
-                $session.order.topping = $parseTree._PizzaTopping;
-                if ($session.order.topping && $session.order.size) {
-                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
-                }
-                $reactions.transition("/EvaluateOrder");
-        state: LocalDoughFromSize
-            q: * @PizzaDough *
-            script:
-                $session.order.dough = $parseTree._PizzaDough;
-                $reactions.transition("/EvaluateOrder");
-        state: LocalAddressFromSize
+        a: Какой размер пиццы? (Маленькая 30см / Большая 40см). Также можете назвать начинку, тесто или адрес.
+        state: LocalSizeText
             q: *
             script:
-                var text = String($request.query || "");
-                if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
+                var text = String($request.query || "").toLowerCase();
+                if (/больш|40/i.test(text)) {
+                    $session.order.size = {name: "Большая", price_modifier: 1.5};
+                } else if (/маленьк|30/i.test(text)) {
+                    $session.order.size = {name: "Маленькая", price_modifier: 1};
+                } else if (text.indexOf("пепперони") !== -1) {
+                    $session.order.topping = {name: "Пепперони", base_price: 450};
+                } else if (text.indexOf("маргарита") !== -1) {
+                    $session.order.topping = {name: "Маргарита", base_price: 400};
+                } else if (text.indexOf("гавайская") !== -1) {
+                    $session.order.topping = {name: "Гавайская", base_price: 500};
+                } else if (/тонк|традиц/i.test(text)) {
+                    $session.order.dough = {name: /тонк/i.test(text) ? "Тонкое" : "Традиционное"};
+                } else if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
                     $session.order.address = text;
-                    $reactions.transition("/EvaluateOrder");
                 } else {
-                    $reactions.answer("Это не похоже на адрес. Назовите адрес доставки.");
+                    $reactions.answer("Не понял. Назовите размер (Маленькая/Большая), начинку, тесто или адрес.");
                 }
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
 
     state: AskDough
-        a: Какое тесто использовать: тонкое или традиционное?
-        buttons:
-            "Тонкое"
-            "Традиционное"
-        state: LocalDough
-            q: * @PizzaDough *
-            script:
-                $session.order.dough = $parseTree._PizzaDough;
-                $reactions.transition("/EvaluateOrder");
-        state: LocalToppingFromDough
-            q: * @PizzaTopping *
-            script:
-                $session.order.topping = $parseTree._PizzaTopping;
-                if ($session.order.topping && $session.order.size) {
-                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
-                }
-                $reactions.transition("/EvaluateOrder");
-        state: LocalSizeFromDough
-            q: * @PizzaSize *
-            script:
-                $session.order.size = $parseTree._PizzaSize;
-                if ($session.order.topping && $session.order.size) {
-                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
-                }
-                $reactions.transition("/EvaluateOrder");
-        state: LocalAddressFromDough
+        a: Какое тесто? (Тонкое / Традиционное). Также можете назвать начинку, размер или адрес.
+        state: LocalDoughText
             q: *
             script:
-                var text = String($request.query || "");
-                if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
+                var text = String($request.query || "").toLowerCase();
+                if (/тонк/i.test(text)) {
+                    $session.order.dough = {name: "Тонкое"};
+                } else if (/традиц/i.test(text)) {
+                    $session.order.dough = {name: "Традиционное"};
+                } else if (text.indexOf("пепперони") !== -1) {
+                    $session.order.topping = {name: "Пепперони", base_price: 450};
+                } else if (text.indexOf("маргарита") !== -1) {
+                    $session.order.topping = {name: "Маргарита", base_price: 400};
+                } else if (text.indexOf("гавайская") !== -1) {
+                    $session.order.topping = {name: "Гавайская", base_price: 500};
+                } else if (/больш|40/i.test(text)) {
+                    $session.order.size = {name: "Большая", price_modifier: 1.5};
+                } else if (/маленьк|30/i.test(text)) {
+                    $session.order.size = {name: "Маленькая", price_modifier: 1};
+                } else if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
                     $session.order.address = text;
-                    $reactions.transition("/EvaluateOrder");
                 } else {
-                    $reactions.answer("Это не похоже на адрес. Назовите адрес доставки.");
+                    $reactions.answer("Не понял. Назовите тесто (Тонкое/Традиционное), начинку, размер или адрес.");
                 }
+                if ($session.order.topping && $session.order.size) {
+                    $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
+                }
+                $reactions.transition("/EvaluateOrder");
 
     state: AskAddress
-        a: Назовите, пожалуйста, адрес доставки.
+        a: Назовите адрес доставки.
         state: LocalAddress
             q: *
             script:
@@ -194,7 +175,7 @@ theme: /
             ]);
 
     state: ChangeOrder
-        a: Что бы вы хотели изменить в заказе?
+        a: Что изменить? (Начинку / Размер / Тесто / Адрес)
         buttons:
             "Начинку" -> /AskTopping
             "Размер" -> /AskSize
