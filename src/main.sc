@@ -1,5 +1,4 @@
 theme: /
-    # Старт диалога
     state: Start
         q!: $regex</start>
         intent!: /Приветствие
@@ -17,7 +16,6 @@ theme: /
             "Маргарита" -> /SetTopping
             "Гавайская" -> /SetTopping
 
-    # Установка начинки из кнопки
     state: SetTopping
         script:
             if (!$session.order) {
@@ -33,7 +31,6 @@ theme: /
             }
             $reactions.transition("/EvaluateOrder");
 
-    # Заполнение параметров из интента
     state: FillOrder
         intent!: /OrderPizza
         script:
@@ -52,7 +49,6 @@ theme: /
             }
             $reactions.transition("/EvaluateOrder");
 
-    # Оценка собранных данных
     state: EvaluateOrder
         script:
             if (!$session.order.topping) { $reactions.transition("/AskTopping"); }
@@ -61,7 +57,6 @@ theme: /
             else if (!$session.order.address) { $reactions.transition("/AskAddress"); }
             else { $reactions.transition("/ConfirmOrder"); }
 
-    # Уточняющие вопросы
     state: AskTopping
         a: Какую начинку/вид пиццы вы предпочитаете?
         buttons:
@@ -90,10 +85,15 @@ theme: /
                 $session.order.dough = $parseTree._PizzaDough;
                 $reactions.transition("/EvaluateOrder");
         state: LocalAddressFromTopping
-            q: $regex<.*(ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\.).*
+            q: *
             script:
-                $session.order.address = $request.query;
-                $reactions.transition("/EvaluateOrder");
+                var text = String($request.query || "");
+                if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
+                    $session.order.address = text;
+                    $reactions.transition("/EvaluateOrder");
+                } else {
+                    $reactions.answer("Это не похоже на адрес. Назовите адрес доставки.");
+                }
 
     state: AskSize
         a: Какой размер пиццы вам приготовить?
@@ -122,10 +122,15 @@ theme: /
                 $session.order.dough = $parseTree._PizzaDough;
                 $reactions.transition("/EvaluateOrder");
         state: LocalAddressFromSize
-            q: $regex<.*(ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\.).*
+            q: *
             script:
-                $session.order.address = $request.query;
-                $reactions.transition("/EvaluateOrder");
+                var text = String($request.query || "");
+                if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
+                    $session.order.address = text;
+                    $reactions.transition("/EvaluateOrder");
+                } else {
+                    $reactions.answer("Это не похоже на адрес. Назовите адрес доставки.");
+                }
 
     state: AskDough
         a: Какое тесто использовать: тонкое или традиционное?
@@ -154,10 +159,15 @@ theme: /
                 }
                 $reactions.transition("/EvaluateOrder");
         state: LocalAddressFromDough
-            q: $regex<.*(ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\.).*
+            q: *
             script:
-                $session.order.address = $request.query;
-                $reactions.transition("/EvaluateOrder");
+                var text = String($request.query || "");
+                if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
+                    $session.order.address = text;
+                    $reactions.transition("/EvaluateOrder");
+                } else {
+                    $reactions.answer("Это не похоже на адрес. Назовите адрес доставки.");
+                }
 
     state: AskAddress
         a: Назовите, пожалуйста, адрес доставки.
@@ -167,7 +177,6 @@ theme: /
                 $session.order.address = $request.query;
                 $reactions.transition("/EvaluateOrder");
 
-    # Подтверждение
     state: ConfirmOrder
         script:
             var msg = "Проверьте ваш заказ:\n" +
