@@ -76,7 +76,6 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
-        # Обработка размера в состоянии AskTopping
         state: LocalSizeFromTopping
             q: * @PizzaSize *
             script:
@@ -85,11 +84,15 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
-        # Обработка теста в состоянии AskTopping
         state: LocalDoughFromTopping
             q: * @PizzaDough *
             script:
                 $session.order.dough = $parseTree._PizzaDough;
+                $reactions.transition("/EvaluateOrder");
+        state: LocalAddressFromTopping
+            q: $regex<.*(ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\.).*
+            script:
+                $session.order.address = $request.query;
                 $reactions.transition("/EvaluateOrder");
 
     state: AskSize
@@ -105,7 +108,6 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
-        # Обработка начинки в состоянии AskSize
         state: LocalToppingFromSize
             q: * @PizzaTopping *
             script:
@@ -114,11 +116,15 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
-        # Обработка теста в состоянии AskSize
         state: LocalDoughFromSize
             q: * @PizzaDough *
             script:
                 $session.order.dough = $parseTree._PizzaDough;
+                $reactions.transition("/EvaluateOrder");
+        state: LocalAddressFromSize
+            q: $regex<.*(ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\.).*
+            script:
+                $session.order.address = $request.query;
                 $reactions.transition("/EvaluateOrder");
 
     state: AskDough
@@ -131,7 +137,6 @@ theme: /
             script:
                 $session.order.dough = $parseTree._PizzaDough;
                 $reactions.transition("/EvaluateOrder");
-        # Обработка начинки в состоянии AskDough
         state: LocalToppingFromDough
             q: * @PizzaTopping *
             script:
@@ -140,7 +145,6 @@ theme: /
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
                 $reactions.transition("/EvaluateOrder");
-        # Обработка размера в состоянии AskDough
         state: LocalSizeFromDough
             q: * @PizzaSize *
             script:
@@ -148,6 +152,11 @@ theme: /
                 if ($session.order.topping && $session.order.size) {
                     $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
                 }
+                $reactions.transition("/EvaluateOrder");
+        state: LocalAddressFromDough
+            q: $regex<.*(ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\.).*
+            script:
+                $session.order.address = $request.query;
                 $reactions.transition("/EvaluateOrder");
 
     state: AskAddress
