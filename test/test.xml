@@ -34,7 +34,9 @@
         <q>большая пепперони на тонком тесте самовывоз</q>
         <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
         <q>замените размер на маленькую</q>
-        <a/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+        <a>Параметры заказа сохранены.</a>
+        <a>Проверьте заказ: Пепперони; размер: Маленькая (30 см); основа: Тонкое; количество: 1; получение: Самовывоз; сумма: 450 руб.</a>
+        <a state="/ConfirmOrder"/>
     </test-case>
     <test-case id="PrematureConfirmation">
         <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
@@ -48,5 +50,19 @@
     <test-case id="UnknownInput">
         <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
         <q>абракадабра фыва</q><a state="/CatchAll"/><a state="/AskTopping"/>
+    </test-case>
+    <test-case id="QuantityWithAddress">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>две большие пиццы пепперони на тонком тесте улица Трудовая дом 5</q>
+        <a>Параметры заказа сохранены.</a>
+        <a>Проверьте заказ: Пепперони; размер: Большая (40 см); основа: Тонкое; количество: 2; получение: Доставка; адрес: улица Трудовая дом 5; сумма: 1350 руб.</a>
+        <a state="/ConfirmOrder"/>
+    </test-case>
+    <test-case id="FourCheeseNotQuantity">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>большая пицца четыре сыра на тонком тесте самовывоз</q>
+        <a>Параметры заказа сохранены.</a>
+        <a>Проверьте заказ: Маргарита; размер: Большая (40 см); основа: Тонкое; количество: 1; получение: Самовывоз; сумма: 600 руб.</a>
+        <a state="/ConfirmOrder"/>
     </test-case>
 </test>

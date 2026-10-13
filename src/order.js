@@ -24,6 +24,41 @@ function pizzaApply(session, tree, entities, query) {
         payment:'payment',quantity:'quantity',deliveryTime:'deliveryTime',phone:'phone'};
     var candidates = {}, errors = [], changed = [];
     var i, key, ent, field, val;
+    var numericEntities = [], quantityEntities = [];
+    var words = query.toLowerCase().match(/[а-яёa-z0-9+-]+/g) || [];
+    for (i = 0; i < entities.length; i++) {
+        ent = entities[i];
+        if (ent.pattern !== 'duckling.number') continue;
+        numericEntities.push(ent);
+        var covered = false;
+        for (var ni = 0; ni < entities.length; ni++) {
+            var ne = entities[ni];
+            if (ne.pattern === 'duckling.number') continue;
+            if ((mapping[ne.pattern] || ne.pattern === 'duckling.time' || ne.pattern === 'duckling.phone-number') &&
+                ne.startPos <= ent.startPos && ne.startPos + ne.length >= ent.startPos + ent.length) covered = true;
+        }
+        var following = words[ent.startPos + ent.length] || '';
+        var preceding = words[ent.startPos - 1] || '';
+        var lookAhead = ent.startPos + ent.length;
+        // Allow "две большие пиццы" and "2 пепперони".
+        for (var ai = 0; ai < 3; ai++) {
+            var modifier = null;
+            for (var mi = 0; mi < entities.length; mi++) {
+                var me = entities[mi];
+                if (me.startPos === lookAhead && (me.pattern === 'PizzaSize' || me.pattern === 'PizzaTopping')) {
+                    if (!modifier || me.length > modifier.length) modifier = me;
+                }
+            }
+            if (!modifier) break;
+            if (modifier.pattern === 'PizzaTopping') following = 'пицца';
+            lookAhead += modifier.length;
+            if (/^(пицц|штук|порци)/.test(words[lookAhead] || '')) following = words[lookAhead];
+        }
+        if (!covered && (/^(пицц|штук|порци)/.test(following) || /^(количество|штук)$/.test(preceding) || session.pendingField === 'quantity')) {
+            quantityEntities.push(pizzaDecode(ent.value));
+        }
+    }
+    if (quantityEntities.length) candidates.quantity = quantityEntities;
     for (i = 0; i < entities.length; i++) {
         ent = entities[i]; field = mapping[ent.pattern];
         if (!field) continue;
@@ -46,6 +81,7 @@ function pizzaApply(session, tree, entities, query) {
     for (key in slots) {
         if (!Object.prototype.hasOwnProperty.call(slots,key)) continue;
         val = tree['_' + key];
+        if (key === 'quantity' && numericEntities.length) continue;
         if (val !== null && typeof val !== 'undefined' && val !== '' && !candidates[key]) candidates[key] = [pizzaDecode(val)];
     }
     // Legacy slots from the supplied archive also remain usable.
@@ -69,9 +105,8 @@ function pizzaApply(session, tree, entities, query) {
         val = unique[0];
         if (field === 'quantity') {
             // A house number, diameter or clock hour is not an order quantity.
-            if (!/(количеств|штук|пицц|порци)/i.test(query) && session.pendingField !== 'quantity') continue;
-            if (candidates.address && !/(количеств|штук)/i.test(query)) continue;
-            if (/(\d\s*см|сантиметр)/i.test(query) && !/(количеств|штук)/i.test(query)) continue;
+            if (!quantityEntities.length && session.pendingField !== 'quantity' &&
+                !/(количество\s+|(?:\d+|одна|одну|две|два|три|четыре|пять|шесть|семь|восемь|девять|десять)\s+(?:пицц|штук|порци))/i.test(query)) continue;
             val = Number(val && typeof val === 'object' ? val.value : val);
             if (!isFinite(val) || val < 1 || val > 10 || Math.floor(val) !== val) {
                 errors.push('Количество должно быть целым числом от 1 до 10.'); continue;
