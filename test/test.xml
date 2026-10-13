@@ -34,7 +34,7 @@
         <q>большая пепперони на тонком тесте самовывоз</q>
         <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
         <q>замените размер на маленькую</q>
-        <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+        <a/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
     </test-case>
     <test-case id="PrematureConfirmation">
         <q>/start</q><a state="/Start"/><a state="/AskTopping"/>

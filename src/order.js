@@ -27,6 +27,17 @@ function pizzaApply(session, tree, entities, query) {
     for (i = 0; i < entities.length; i++) {
         ent = entities[i]; field = mapping[ent.pattern];
         if (!field) continue;
+        // NLU returns composite matches and their nested submatches.
+        // Keep the largest span for a field; independent choices still conflict.
+        var nested = false;
+        for (var j = 0; j < entities.length; j++) {
+            var other = entities[j];
+            if (i !== j && mapping[other.pattern] === field &&
+                typeof ent.startPos === 'number' && typeof other.startPos === 'number' &&
+                other.length > ent.length && other.startPos <= ent.startPos &&
+                other.startPos + other.length >= ent.startPos + ent.length) nested = true;
+        }
+        if (nested) continue;
         val = pizzaDecode(ent.value);
         if (val === '' || val === null || typeof val === 'undefined') continue;
         if (!candidates[field]) candidates[field] = [];

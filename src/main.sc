@@ -99,7 +99,10 @@ theme: /
         script:
             var editResult = pizzaApply($session, $parseTree, $entities, $request.query);
             if (editResult.errors.length) $reactions.answer(editResult.errors.join(' '));
-            if (editResult.changed.length) $reactions.transition('/EvaluateOrder');
+            if (editResult.changed.length) {
+                $reactions.answer('Параметры заказа сохранены.');
+                $reactions.transition('/EvaluateOrder');
+            }
             else $reactions.transition('/ChangeOrder');
 
     state: ChangeOrder
