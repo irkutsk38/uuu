@@ -1,140 +1,132 @@
+require: order.js
+
 theme: /
 
     state: Start
         q!: $regex</start>
-        intent!: /Приветствие
         script:
-            $session.order = {
-                topping: null,
-                size: null,
-                dough: null,
-                address: null,
-                price: 0
-            };
-        a: Здравствуйте! Я бот для заказа пиццы. Какую пиццу вы бы хотели заказать? (Пепперони, Маргарита, Гавайская)
-        # 👇 ВАЖНО: сразу переходим в EvaluateOrder
+            pizzaReset($session);
+        a: Здравствуйте! Я бот для заказа пиццы. Можно назвать начинку, размер, основу и адрес в любом порядке или одной фразой.
+        go!: /EvaluateOrder
+
+    state: Hello
+        intent!: /привет
         script:
-            $reactions.transition("/EvaluateOrder");
+            pizzaEnsure($session);
+        a: Здравствуйте! Помогу заказать пиццу. Уже указанные параметры сохранены.
+        go!: /EvaluateOrder
 
-    state: GlobalInput
-        q: *
+    state: Bye
+        intent!: /пока
+        a: До свидания! Будем рады вашему следующему заказу.
+
+    state: OrderInput
+        intent!: /OrderPizza
+        go!: /ApplyParameters
+
+    state: GetTopping
+        intent!: /ToppingIntent
+        go!: /ApplyParameters
+
+    state: GetSize
+        intent!: /SizeIntent
+        go!: /ApplyParameters
+
+    state: GetDough
+        intent!: /DoughIntent
+        go!: /ApplyParameters
+
+    state: GetAddress
+        intent!: /AddressIntent
+        go!: /ApplyParameters
+
+    state: ApplyParameters
         script:
-            if (!$session.order) {
-                $session.order = {topping: null, size: null, dough: null, address: null, price: 0};
-            }
-            var text = String($request.query || "").toLowerCase();
-            var recognized = false;
-
-            // 1. Адрес (приоритет — если есть ключевые слова адреса)
-            if (/ул|улица|дом|д\.|кв|квартира|проспект|пр-т|пр\./i.test(text)) {
-                $session.order.address = $request.query;
-                recognized = true;
-            }
-
-            // 2. Начинка
-            if (text.indexOf("пепперони") !== -1) {
-                $session.order.topping = {name: "Пепперони", base_price: 450};
-                recognized = true;
-            } else if (text.indexOf("маргарита") !== -1) {
-                $session.order.topping = {name: "Маргарита", base_price: 400};
-                recognized = true;
-            } else if (text.indexOf("гавайская") !== -1) {
-                $session.order.topping = {name: "Гавайская", base_price: 500};
-                recognized = true;
-            }
-
-            // 3. Размер
-            if (/больш|40/i.test(text)) {
-                $session.order.size = {name: "Большая", price_modifier: 1.5};
-                recognized = true;
-            } else if (/маленьк|30/i.test(text)) {
-                $session.order.size = {name: "Маленькая", price_modifier: 1};
-                recognized = true;
-            }
-
-            // 4. Тесто
-            if (/тонк/i.test(text)) {
-                $session.order.dough = {name: "Тонкое"};
-                recognized = true;
-            } else if (/традиц/i.test(text)) {
-                $session.order.dough = {name: "Традиционное"};
-                recognized = true;
-            }
-
-            // Считаем цену
-            if ($session.order.topping && $session.order.size) {
-                $session.order.price = $session.order.topping.base_price * $session.order.size.price_modifier;
-            }
-
-            if (recognized) {
-                $reactions.transition("/EvaluateOrder");
-            } else {
-                $reactions.answer("Не понял. Назовите начинку (Пепперони, Маргарита, Гавайская), размер (Маленькая/Большая), тесто (Тонкое/Традиционное) или адрес доставки.");
-            }
+            var result = pizzaApply($session, $parseTree, $entities, $request.query);
+            if (result.errors.length) $reactions.answer(result.errors.join(' '));
+            if (result.changed.length) $reactions.answer('Параметры заказа сохранены.');
+        go!: /EvaluateOrder
 
     state: EvaluateOrder
         script:
-            if (!$session.order.topping) { $reactions.transition("/AskTopping"); }
-            else if (!$session.order.size) { $reactions.transition("/AskSize"); }
-            else if (!$session.order.dough) { $reactions.transition("/AskDough"); }
-            else if (!$session.order.address) { $reactions.transition("/AskAddress"); }
-            else { $reactions.transition("/ConfirmOrder"); }
+            $reactions.transition(pizzaNext($session));
 
     state: AskTopping
-        a: Какую начинку вы предпочитаете? (Пепперони, Маргарита, Гавайская). Также можете сразу назвать размер, тесто или адрес.
+        a: Какую начинку вы предпочитаете? Пепперони, Маргарита, Гавайская, мясная или овощная. Можно сразу указать другие параметры.
 
     state: AskSize
-        a: Какой размер пиццы? (Маленькая 30см / Большая 40см). Также можете назвать начинку, тесто или адрес.
+        a: Какой размер пиццы? Маленькая 30 см, средняя 35 см или большая 40 см. Можно сразу указать другие параметры.
 
     state: AskDough
-        a: Какое тесто? (Тонкое / Традиционное). Также можете назвать начинку, размер или адрес.
+        a: Какая основа пиццы? Тонкое или традиционное тесто. Можно сразу указать другие параметры.
 
     state: AskAddress
-        a: Назовите адрес доставки.
+        a: Назовите адрес с улицей и номером дома, например улица Ленина дом 5, или выберите самовывоз.
 
     state: ConfirmOrder
         script:
-            var msg = "Проверьте ваш заказ:\n" +
-                      "• Пицца: " + $session.order.topping.name + "\n" +
-                      "• Размер: " + $session.order.size.name + "\n" +
-                      "• Тесто: " + $session.order.dough.name + "\n" +
-                      "• Адрес: " + $session.order.address + "\n" +
-                      "• Итоговая цена: " + $session.order.price + " руб.\n\n" +
-                      "Всё верно?";
-            $reactions.answer(msg);
-            $reactions.buttons([
-                {text: "Да, подтверждаю", transition: "/ProcessingOrder"},
-                {text: "Изменить заказ", transition: "/ChangeOrder"},
-                {text: "Сбросить всё", transition: "/ResetOrder"}
-            ]);
+            $reactions.answer(pizzaSummary($session));
+        a: Всё верно? Подтвердите заказ или назовите, что изменить.
+        buttons:
+            "Да, подтверждаю" -> /ProcessingOrder
+            "Изменить заказ" -> /ChangeOrder
+            "Сбросить всё" -> /ResetOrder
+
+    state: ConfirmInput
+        intent!: /ConfirmIntent
+        go!: /ProcessingOrder
+
+    state: ProcessingOrder
+        script:
+            var confirmation = pizzaConfirm($session);
+            if (confirmation.accepted) {
+                $reactions.answer('Спасибо! Учебный заказ №' + confirmation.number + ' подтверждён. ' + pizzaSummary($session));
+                $reactions.answer('Это учебный бот: передача заказа в пиццерию не подключена.');
+                $reactions.transition('/AfterOrder');
+            } else if (confirmation.reason === 'duplicate') {
+                $reactions.answer('Этот заказ уже подтверждён. Для новой пиццы скажите «новый заказ».');
+                $reactions.transition('/AfterOrder');
+            } else {
+                $reactions.answer('Сначала укажите недостающие параметры заказа.');
+                $reactions.transition(confirmation.next);
+            }
+
+    state: AfterOrder
+        a: Вы можете начать новый заказ или изменить параметры текущего.
+
+    state: ChangeInput
+        intent!: /ChangeIntent
+        script:
+            var editResult = pizzaApply($session, $parseTree, $entities, $request.query);
+            if (editResult.errors.length) $reactions.answer(editResult.errors.join(' '));
+            if (editResult.changed.length) $reactions.transition('/EvaluateOrder');
+            else $reactions.transition('/ChangeOrder');
 
     state: ChangeOrder
-        a: Что изменить? (Начинку / Размер / Тесто / Адрес)
+        script:
+            pizzaEnsure($session);
+            $reactions.answer(pizzaSummary($session));
+        a: Назовите новое значение начинки, размера, основы или адреса. Остальные параметры сохранятся.
         buttons:
             "Начинку" -> /AskTopping
             "Размер" -> /AskSize
-            "Тесто" -> /AskDough
+            "Основу" -> /AskDough
             "Адрес" -> /AskAddress
 
-    state: ProcessingOrder
-        a: Спасибо! Ваш заказ принят и передан на кухню. Готовим вашу пиццу!
-        script:
-            $session.order = null;
+    state: ResetInput
+        intent!: /ResetIntent
+        go!: /ResetOrder
 
     state: ResetOrder
-        q!: * (сброс*|отмена|заново|очистить) *
         script:
-            $session.order = {
-                topping: null,
-                size: null,
-                dough: null,
-                address: null,
-                price: 0
-            };
-        a: Данные заказа сброшены. Чем я могу помочь?
-        buttons:
-            "Начать сначала" -> /Start
+            pizzaReset($session);
+        a: Данные заказа сброшены. Начнём новый заказ.
+        go!: /EvaluateOrder
 
     state: CatchAll
         event!: noMatch
-        a: Я вас не совсем понял. Пожалуйста, уточните детали заказа или нажмите /start.
+        script:
+            var fallbackResult = pizzaApply($session, $parseTree, $entities, $request.query);
+            if (fallbackResult.errors.length) $reactions.answer(fallbackResult.errors.join(' '));
+            if (!fallbackResult.changed.length) $reactions.answer('Я не понял запрос. Укажите начинку, размер, основу, адрес или самовывоз. Для сброса скажите «новый заказ».');
+        go!: /EvaluateOrder

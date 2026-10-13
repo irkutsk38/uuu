@@ -1,2 +1,52 @@
 <test>
-</test>    
+    <test-case id="Start">
+        <q>/start</q>
+        <a state="/Start"/>
+        <a state="/AskTopping"/>
+    </test-case>
+    <test-case id="AllParametersAtOnce">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>большая пепперони на тонком тесте улица Ленина дом 5</q>
+        <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+        <q>да подтверждаю</q>
+        <a state="/ProcessingOrder"/><a state="/ProcessingOrder"/><a state="/AfterOrder"/>
+    </test-case>
+    <test-case id="AddressFirst">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>улица Школьная дом 15</q><a state="/ApplyParameters"/><a state="/AskTopping"/>
+        <q>тонкое тесто</q><a state="/ApplyParameters"/><a state="/AskTopping"/>
+        <q>большая</q><a state="/ApplyParameters"/><a state="/AskTopping"/>
+        <q>маргарита</q><a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+    </test-case>
+    <test-case id="SizeFirst">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>средняя</q><a state="/ApplyParameters"/><a state="/AskTopping"/>
+        <q>мясная</q><a state="/ApplyParameters"/><a state="/AskDough"/>
+        <q>традиционное тесто</q><a state="/ApplyParameters"/><a state="/AskAddress"/>
+    </test-case>
+    <test-case id="Pickup">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>большая маргарита на тонком тесте самовывоз</q>
+        <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+    </test-case>
+    <test-case id="EditKeepsOtherParameters">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>большая пепперони на тонком тесте самовывоз</q>
+        <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+        <q>замените размер на маленькую</q>
+        <a state="/ApplyParameters"/><a state="/ConfirmOrder"/><a state="/ConfirmOrder"/>
+    </test-case>
+    <test-case id="PrematureConfirmation">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>да</q><a state="/ProcessingOrder"/><a state="/AskTopping"/>
+    </test-case>
+    <test-case id="Reset">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>большая</q><a state="/ApplyParameters"/><a state="/AskTopping"/>
+        <q>сбросить заказ</q><a state="/ResetOrder"/><a state="/AskTopping"/>
+    </test-case>
+    <test-case id="UnknownInput">
+        <q>/start</q><a state="/Start"/><a state="/AskTopping"/>
+        <q>абракадабра фыва</q><a state="/CatchAll"/><a state="/AskTopping"/>
+    </test-case>
+</test>
